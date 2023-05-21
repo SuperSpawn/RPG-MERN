@@ -22,25 +22,21 @@ const checkAuth = async (req) => {
 const getUsers = async (req, res, next) => {
   try {
     const user = await checkAuth(req);
-    if (!user)
-      res.status(400).json({ success: false, error: "Invalid authorization" });
+    if (!user) res.status(400).json({ error: "Invalid authorization" });
     if (!user.isAdmin)
-      res
-        .status(403)
-        .json({ success: false, error: "Not authorized to access this data" });
+      res.status(403).json({ error: "Not authorized to access this data" });
     const users = await User.find({});
-    if (!users)
-      res.status(404).json({ success: false, error: "Cannot fine users" });
+    if (!users) res.status(404).json({ error: "Cannot fine users" });
     const mappedUsers = users.map((user) => ({
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      created_at: user.created_at,
+      authority: user.authority,
     }));
-    res.status(200).json({ success: true, data: mappedUsers });
+    res.status(200).json({ data: mappedUsers });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -51,11 +47,11 @@ const createUser = async (req, res, next) => {
   try {
     const { id, username, name, email, password } = req.body;
     if (!name || !email || !password || !id || !username)
-      res.status(500).json({ success: false, error: "Invalid parameters" });
+      res.status(500).json({ error: "Invalid parameters" });
 
     const userTaken = await User.findOne({ email });
     if (userTaken) {
-      res.status(403).json({ success: false, error: "Email already taken" });
+      res.status(403).json({ error: "Email already taken" });
       throw new Error("User already taken");
     }
 
@@ -68,8 +64,7 @@ const createUser = async (req, res, next) => {
       email,
       password: hashedPassword,
     });
-    if (!user)
-      res.status(500).json({ success: false, error: "Failed to create user" });
+    if (!user) res.status(500).json({ error: "Failed to create user" });
     const accessToken = jwt.sign(
       {
         user: {
@@ -84,12 +79,11 @@ const createUser = async (req, res, next) => {
       { expiresIn: process.env.EXPIRE_IN || "24h" }
     );
     res.status(201).json({
-      success: true,
       data: { name: user.name, token: accessToken },
     });
-    res.status(201).json({ success: true, data: user });
+    res.status(201).json({ data: user });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -99,26 +93,22 @@ const createUser = async (req, res, next) => {
 const getUser = async (req, res, next) => {
   try {
     const reqUser = await checkAuth(req);
-    if (!reqUser)
-      res.status(400).json({ success: false, error: "Invalid authorization" });
+    if (!reqUser) res.status(400).json({ error: "Invalid authorization" });
     if (reqUser.authority != process.env.ADMIN)
-      res
-        .status(403)
-        .json({ success: false, error: "Not authorized to access this data" });
+      res.status(403).json({ error: "Not authorized to access this data" });
     const id = req.params.id;
-    if (!id) res.status(403).json({ success: false, error: "Invalid ID" });
+    if (!id) res.status(403).json({ error: "Invalid ID" });
     const user = await User.findById(id);
-    if (!user)
-      res.status(404).json({ success: false, error: "Cannot find user" });
+    if (!user) res.status(404).json({ error: "Cannot find user" });
     const mappedUser = {
       _id: user._id,
       name: user.name,
       email: user.email,
       authority: user.authority,
     };
-    res.status(200).json({ success: true, data: mappedUser });
+    res.status(200).json({ data: mappedUser });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -128,21 +118,17 @@ const getUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const reqUser = await checkAuth(req);
-    if (!reqUser)
-      res.status(400).json({ success: false, error: "Invalid authorization" });
+    if (!reqUser) res.status(400).json({ error: "Invalid authorization" });
     if (reqUser.authority != process.env.ADMIN)
-      res
-        .status(403)
-        .json({ success: false, error: "Not authorized to access this data" });
+      res.status(403).json({ error: "Not authorized to access this data" });
     const id = req.params.id;
-    if (!id) res.status(403).json({ success: false, error: "Invalid ID" });
+    if (!id) res.status(403).json({ error: "Invalid ID" });
     let user = await User.findById(id);
-    if (!user)
-      res.status(404).json({ success: false, error: "Cannot find user" });
+    if (!user) res.status(404).json({ error: "Cannot find user" });
     await User.findByIdAndUpdate(id, req.body);
-    res.status(200).json({ success: true, data: user });
+    res.status(200).json({ data: user });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -152,21 +138,17 @@ const updateUser = async (req, res, next) => {
 const deleteUser = async (req, res, next) => {
   try {
     const reqUser = await checkAuth(req);
-    if (!reqUser)
-      res.status(400).json({ success: false, error: "Invalid authorization" });
+    if (!reqUser) res.status(400).json({ error: "Invalid authorization" });
     if (reqUser.authority != process.env.ADMIN)
-      res
-        .status(403)
-        .json({ success: false, error: "Not authorized to access this data" });
+      res.status(403).json({ error: "Not authorized to access this data" });
     const id = req.params.id;
-    if (!id) res.status(403).json({ success: false, error: "Invalid ID" });
+    if (!id) res.status(403).json({ error: "Invalid ID" });
     const user = await User.findById(id);
-    if (!user)
-      res.status(404).json({ success: false, error: "Cannot find user" });
+    if (!user) res.status(404).json({ error: "Cannot find user" });
     await User.findByIdAndDelete(id);
-    res.status(200).json({ success: true, data: user });
+    res.status(200).json({ data: user });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -176,25 +158,20 @@ const deleteUser = async (req, res, next) => {
 const changePassword = async (req, res, next) => {
   try {
     const user = await checkAuth(req);
-    if (!user)
-      res.status(400).json({ success: false, error: "Invalid authorization" });
+    if (!user) res.status(400).json({ error: "Invalid authorization" });
     const { previous_password, new_password } = req.body;
     if (!previous_password || !new_password)
-      res
-        .status(403)
-        .json({ success: false, error: "Invalid password parameters" });
+      res.status(403).json({ error: "Invalid password parameters" });
     if (await bcrypt.compare(previous_password, user.password)) {
       const hashedPassword = await bcrypt.hash(new_password, 10);
       user.password = hashedPassword;
       await User.findByIdAndUpdate(id, user);
-      res.status(200).json({ success: true, data: user });
+      res.status(200).json({ data: user });
     } else {
-      res
-        .status(403)
-        .json({ success: false, error: "No permission to change password" });
+      res.status(403).json({ error: "No permission to change password" });
     }
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -205,12 +182,9 @@ const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)
-      res
-        .status(403)
-        .json({ success: false, error: "Invalid login information" });
+      res.status(403).json({ error: "Invalid login information" });
     const user = await User.findOne({ email: email });
-    if (!user)
-      res.status(404).json({ success: false, error: "User not found" });
+    if (!user) res.status(404).json({ error: "User not found" });
     if (await bcrypt.compare(password, user.password)) {
       const accessToken = jwt.sign(
         {
@@ -224,14 +198,12 @@ const loginUser = async (req, res, next) => {
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.EXPIRE_IN || "24h" }
       );
-      res.status(200).json({ success: true, data: accessToken });
+      res.status(200).json({ data: accessToken });
     } else {
-      res
-        .status(404)
-        .json({ success: false, error: "No such user / invalid information" });
+      res.status(404).json({ error: "No such user / invalid information" });
     }
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ error: e.message });
   }
 };
 
